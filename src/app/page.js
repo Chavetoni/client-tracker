@@ -1,43 +1,35 @@
 "use client";
-import ClientTracker from '@/components/ClientTracker'
-import { supabase } from '../lib/supabase'
-import { useEffect, useState } from 'react'
-import { redirect } from 'next/navigation'
+import { useEffect, useState } from 'react';
+import { redirect } from 'next/navigation';
+import ClientTracker from '@/components/ClientTracker';
+import Loading from '@/components/Loading';
+import { checkUser } from '@/lib/supabase';
 
 export default function Home() {
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
+    const [loading, setLoading] = useState(true);
+    const [user, setUser] = useState(null);
 
-  useEffect(() => {
-    // Check authentication status
-    const checkUser = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser()
-        setUser(user)
-      } catch (error) {
-        console.error('Error checking auth:', error)
-      } finally {
-        setLoading(false)
-      }
+    useEffect(() => {
+        const initAuth = async () => {
+            const user = await checkUser();
+            setUser(user);
+            setLoading(false);
+        };
+
+        initAuth();
+    }, []);
+
+    if (loading) {
+        return <Loading />;
     }
 
-    checkUser()
-  }, [])
+    if (!user) {
+        redirect('/login');
+    }
 
-  // Show loading state
-  if (loading) {
-    return <div>Loading...</div>
-  }
-
-  // Redirect if not authenticated
-  if (!user) {
-    redirect('/login')
-  }
-
-  // Show app if authenticated
-  return (
-    <main>
-      <ClientTracker />
-    </main>
-  )
+    return (
+        <main>
+            <ClientTracker user={user} />
+        </main>
+    );
 }

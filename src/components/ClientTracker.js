@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Users, Clock, Plus, Gift, X, AlertCircle, Search } from 'lucide-react';
+import { Users, Clock, Plus, Gift, X, AlertCircle, Search, LogOut, User } from 'lucide-react';
+import {supabase} from '@/lib/supabase';
 
 /**
  * A reusable Modal component that handles the overlay and container styling.
@@ -293,7 +294,7 @@ const UpdateClientModal = ({ client, onClose, onUpdate }) => {
 /**
  * ClientTracker is the main landing page component for the CRM.
  */
-const ClientTracker = () => {
+const ClientTracker = ({user}) => {
   const [clients, setClients] = useState([
     {
       id: 1,
@@ -562,10 +563,20 @@ const ClientTracker = () => {
     return date < today;
   };
 
+  const handleLogout = async () => {
+    try {
+      const {error} = await supabase.auth.signOut();
+      if (error) throw error;
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Error signing out:', error.message);
+    }
+  }
+
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-gray-200 p-4">
+      <aside className="w-64 bg-white border-r border-gray-200 p-4 flex flex-col">
         <div className="flex items-center mb-8">
           <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
             <span className="text-white font-bold">CT</span>
@@ -574,6 +585,7 @@ const ClientTracker = () => {
             ClientTrack
           </span>
         </div>
+
         <nav className="space-y-2">
           <button
             onClick={() => setViewMode("all")}
@@ -609,6 +621,17 @@ const ClientTracker = () => {
             <span>Gift Schedule</span>
           </button>
         </nav>
+
+        <div className = "mt-auto pt-4 border-t border-gray-200">
+          <button
+          onClick={handleLogout}
+          className="flex items-center space-x-3 w-full p-2 rounded-lg text-red-600 hover:bg-red-50"
+          >
+            <LogOut size = {20}/>
+            <span>Sign Out</span>
+          </button>
+        </div>
+
       </aside>
 
       {/* Main Content */}

@@ -7,6 +7,8 @@ const LoginForm = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState(''); 
     const [connectionTest, setConnectionTest] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
     const testConnection = async () => {
         try {
@@ -20,6 +22,8 @@ const LoginForm = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setLoading(true);
+        setError(null);
         
         try {
             if (isLogin) {
@@ -46,9 +50,13 @@ const LoginForm = () => {
                 alert('Check your email for the confirmation link!');
             }
         } catch (error) {
-            alert(error.message);
+            set(error.message);
+        } finally {
+            setLoading(false);
         }
     };
+
+    
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col justify-center">
@@ -115,12 +123,21 @@ const LoginForm = () => {
                                 </a>
                             </div>
                         </div>
+                        
+                        {error && (
+                            <div className="mt-4 p-3 bg-red-100 text-red-600 rounded-lg text-sm">
+                                {error}
+                            </div>
+                        )}
 
                         <button
                             type="submit"
-                            className="w-full py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+                            disabled={loading}
+                            className={`w-full py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white ${
+                                loading ? 'bg-orange-400 cursor-not-allowed' : 'bg-orange-500 hover:bg-orange-600'
+                            } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500`}
                         >
-                            {isLogin ? 'Sign in' : 'Sign up'}
+                            {loading ? 'Loading...' : (isLogin ? 'Sign in' : 'Sign up')}
                         </button>
 
                         {/* Test Connection Button */}
