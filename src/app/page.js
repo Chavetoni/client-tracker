@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import { redirect } from 'next/navigation';
 import ClientTracker from '@/components/ClientTracker';
 import Loading from '@/components/Loading';
@@ -14,6 +14,10 @@ export default function Home() {
             const user = await checkUser();
             setUser(user);
             setLoading(false);
+
+            if (!user) {
+                window.location.href = '/login';
+            }
         };
 
         initAuth();
@@ -21,10 +25,6 @@ export default function Home() {
 
     if (loading) {
         return <Loading />;
-    }
-
-    if (!user) {
-        redirect('/login');
     }
 
     return (

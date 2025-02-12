@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Users, Clock, Plus, Gift, X, AlertCircle, Search, LogOut, User } from 'lucide-react';
 import {supabase} from '@/lib/supabase';
+import {db} from '@/lib/db';
 
 /**
  * A reusable Modal component that handles the overlay and container styling.
@@ -295,77 +296,24 @@ const UpdateClientModal = ({ client, onClose, onUpdate }) => {
  * ClientTracker is the main landing page component for the CRM.
  */
 const ClientTracker = ({user}) => {
-  const [clients, setClients] = useState([
-    {
-      id: 1,
-      name: "Johnson & Co",
-      email: "contact@johnson.com",
-      status: "Follow-up Soon",
-      lastUpdate: "2024/03/20",
-      nextContact: "2024/03/25",
-      lastGift: "2023/12/25",
-      nextGift: "2024/06/25",
-      giftStatus: {
-        status: "Not Started",
-        lastGiftSent: "2023/12/25",
-        lastGiftDetails: "Holiday Gift Basket",
-        giftHistory: [
-          {
-            date: "2023/12/25",
-            gift: "Holiday Gift Basket",
-            notes: "End of year appreciation",
-          },
-        ],
-      },
-      assignedTo: ["Nestor A.", "Daniel G."],
-    },
-    {
-      id: 2,
-      name: "TechStart Inc",
-      email: "info@techstart.com",
-      status: "Updated Recently",
-      lastUpdate: "2024/03/23",
-      nextContact: "2024/03/28",
-      lastGift: "2024/01/15",
-      nextGift: "2024/07/15",
-      giftStatus: {
-        status: "Not Started",
-        lastGiftSent: "2023/12/25",
-        lastGiftDetails: "Holiday Gift Basket",
-        giftHistory: [
-          {
-            date: "2023/12/25",
-            gift: "Holiday Gift Basket",
-            notes: "End of year appreciation",
-          },
-        ],
-      },
-      assignedTo: ["Ron L."],
-    },
-    {
-      id: 3,
-      name: "Global Systems",
-      email: "contact@globalsys.com",
-      status: "Need Update",
-      lastUpdate: "2024/03/15",
-      nextContact: "2024/03/20",
-      lastGift: "2023/09/15",
-      nextGift: "2024/03/15",
-      giftStatus: {
-        status: "Not Started",
-        lastGiftSent: "2023/12/25",
-        lastGiftDetails: "Holiday Gift Basket",
-        giftHistory: [
-          {
-            date: "2023/12/25",
-            gift: "Holiday Gift Basket",
-            notes: "End of year appreciation",
-          },
-        ],
-      },
-      assignedTo: ["Sarah M.", "Amos E."],
-    },
-  ]);
+  const [clients, setClients] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchClients = async () => {
+      try {
+        const data = await db.getClients();
+        setClients(data);
+      } catch (err) {
+        setError(err.message);
+      }finally {
+        setLoading(false);
+      }
+    };
+    fetchClients();
+  }, []);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState("all");
   const [isAddClientOpen, setIsAddClientOpen] = useState(false);
@@ -429,35 +377,34 @@ const ClientTracker = ({user}) => {
     return date.toISOString().split("T")[0].replace(/-/g, "/");
   };
 
-  const handleAddClient = (e) => {
+  const handleAddClient = async (e) => {
     e.preventDefault();
-    const today = new Date().toISOString().split("T")[0].replace(/-/g, "/");
-    const newClientData = {
-      id: clients.length ? Math.max(...clients.map((c) => c.id)) + 1 : 1,
-      name: newClient.name,
-      email: newClient.email,
-      status: "New Client",
-      lastUpdate: today,
-      nextContact: calculateNextContact(today),
-      lastGift: "-",
-      nextGift: calculateNextContact(today),
-      giftStatus: {
-        status: "Not Started",
-        lastGiftSent: null,
-        lastGiftDetails: "",
-        giftHistory: [],
-      },
-      assignedTo: ["Unassigned"],
-    };
-
-    setClients([...clients, newClientData]);
-    setNewClient({ name: "", email: "" });
-    setIsAddClientOpen(false);
+    try {
+      setLoading(true);
+      const newClientData = {
+        name: newClient.name,
+        email: newClient.email,
+        nextContact: calculateNextContact(new Date().toISOString()),
+        nextGift: calculateNextContact(new Date().toISOString())
+      };
+      const addedClient = await db.addClient(newClientData);
+      setClients(prev => [...prev, addedClient]);
+      setIsAddClientOpen(false);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDeleteClient = (clientId) => {
-    setClients(clients.filter((client) => client.id !== clientId));
-    setClientToDelete(null);
+  const handleDeleteClient = async (clientId) => {
+    try {
+      await db.deleteClient(clientId);
+      setClients(prev => prev.filter(client => client.id !== clientId));
+      setClientToDelete(null);
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   const filteredClients = useMemo(() => {
@@ -565,12 +512,12 @@ const ClientTracker = ({user}) => {
 
   const handleLogout = async () => {
     try {
-      const {error} = await supabase.auth.signOut();
-      if (error) throw error;
+      await supabase.auth.signOut();
       window.location.href = '/login';
-    } catch (error) {
+   } catch (error) {
       console.error('Error signing out:', error.message);
-    }
+      alert('Logout failed. Please try again.');
+  }
   }
 
   return (
@@ -848,7 +795,14 @@ const ClientTracker = ({user}) => {
                     >
                       {person.charAt(0)}
                     </div>
-                  ))}
+                  ))  || (  // Add a fallback for when assignedTo is undefined
+                    <div
+                      className="w-8 h-8 rounded-full bg-gray-300 border-2 border-white flex items-center justify-center text-gray-900"
+                      title="Unassigned"
+                    >
+                      U
+                    </div>
+                  )}
                 </div>
                 <div>
 

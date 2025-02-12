@@ -50,7 +50,7 @@ const LoginForm = () => {
                 alert('Check your email for the confirmation link!');
             }
         } catch (error) {
-            set(error.message);
+            setError(error.message);
         } finally {
             setLoading(false);
         }
