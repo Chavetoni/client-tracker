@@ -84,7 +84,7 @@ const LoginForm = () => {
                             <input
                                 type="email"
                                 required
-                                className="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:ring-orange-500 focus:border-orange-500"
+                                className="mt-1 w-full text-gray-700 p-3 border border-gray-300 rounded-lg focus:ring-orange-500 focus:border-orange-500"
                                 placeholder="you@company.com"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
@@ -98,7 +98,7 @@ const LoginForm = () => {
                             <input
                                 type="password"
                                 required
-                                className="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:ring-orange-500 focus:border-orange-500"
+                                className="mt-1 w-full p-3 text-gray-700 border border-gray-300 rounded-lg focus:ring-orange-500 focus:border-orange-500"
                                 placeholder="••••••••"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}

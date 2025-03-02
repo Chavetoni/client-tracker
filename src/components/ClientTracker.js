@@ -303,10 +303,15 @@ const ClientTracker = ({user}) => {
   useEffect(() => {
     const fetchClients = async () => {
       try {
+        setLoading(true);
+        setError(null);
+        console.log('Starting to fetch clients');
         const data = await db.getClients();
+        console.log('Clients fetched succesfully:', data);
         setClients(data);
       } catch (err) {
-        setError(err.message);
+        console.error('error in fetchclients:', err);
+        setError(err.message || 'Failed to fetch Clients');
       }finally {
         setLoading(false);
       }
