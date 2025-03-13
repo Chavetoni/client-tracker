@@ -9,11 +9,11 @@ import {db} from '@/lib/db';
  * A reusable Modal component that handles the overlay and container styling.
  */
 const Modal = ({ children, onClose, className = "" }) => (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div className={`bg-white rounded-lg p-6 relative ${className}`}>
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto py-8">
+    <div className={`bg-white rounded-lg p-6 relative max-h-[90vh] overflow-y-auto ${className}`}>
       <button
         onClick={onClose}
-        className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+        className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10"
       >
         <X size={20} />
       </button>
@@ -142,7 +142,7 @@ const UpdateClientModal = ({ client, onClose, onUpdate }) => {
   };
 
   return (
-    <Modal onClose={onClose} className="w-[600px]">
+    <Modal onClose={onClose} className="w-[800px] md:w-[700px] sm:w-[90%]">
       <h2 className="text-xl font-bold mb-4 text-gray-900">
         Update Client Status
       </h2>
@@ -204,6 +204,9 @@ const UpdateClientModal = ({ client, onClose, onUpdate }) => {
                 }
               />
             </div>
+            <p className="text-sm text-gray-500 italic">
+            Note: A follow-up entry will only be recorded if you enter notes.
+          </p>
           </div>
         </div>
 
@@ -270,6 +273,9 @@ const UpdateClientModal = ({ client, onClose, onUpdate }) => {
               </>
             )}
           </div>
+          <p className="text-sm text-gray-500 italic mt-2">
+          Note: Gift history will only be updated if you change the status or mark a gift as sent.
+        </p>
         </div>
 
         <div className="flex justify-end space-x-3">
@@ -439,41 +445,48 @@ const ClientTracker = ({user}) => {
       .toISOString()
       .split("T")[0]
       .replace(/-/g, "/");
+
     const updatedClients = clients.map((client) => {
       if (client.id === clientId) {
         const updatedClient = {
           ...client,
           lastUpdate: today,
-          nextContact: updateData.followUp.nextFollowUpDate,
-          followUpHistory: [
-            ...(client.followUpHistory || []),
+        };
+          //update follow-up if user entered notes or intentionally changed something
+          if (updateData.followUp.notes.trim() != '') {
+            updatedClient.nextContact = updateData.followUp.nextFollowUpDate;
+            updatedClient.followUpHistory = [
+              ...(client.followUpHistory || []),
             {
               date: today,
               type: updateData.followUp.type,
               notes: updateData.followUp.notes,
             },
-          ],
-        };
+          ];
+        }
 
-        if (updateData.gift.status === "Sent") {
-          updatedClient.giftStatus = {
-            status: updateData.gift.status,
-            lastGiftSent: today,
-            lastGiftDetails: updateData.gift.details,
-            giftHistory: [
-              ...(client.giftStatus?.giftHistory || []),
-              {
-                date: today,
-                gift: updateData.gift.details,
-                notes: updateData.gift.notes,
-              },
-            ],
-          };
-        } else {
-          updatedClient.giftStatus = {
-            ...client.giftStatus,
-            status: updateData.gift.status,
-          };
+        //only update gift status if its different from the current status
+        if (updateData.gift.status !== client.giftStatus?.status || updateData.gift.status === "Sent") {
+          if (updateData.gift.status === "Sent") {
+            updatedClient.giftStatus = {
+              status: updateData.gift.status,
+              lastGiftSent: today,
+              lastGiftDetails: updateData.gift.details,
+              giftHistory: [
+                ...(client.giftStatus?.giftHistory || []),
+                {
+                  date: today,
+                  gift: updateData.gift.details,
+                  notes: updateData.gift.notes,
+                },
+              ],
+            };
+          } else {
+            updatedClient.giftStatus = {
+              ...client.giftStatus,
+              status: updateData.gift.status,
+            };
+          }
         }
 
         updatedClient.status = calculateClientStatus(updatedClient);
@@ -607,7 +620,7 @@ const ClientTracker = ({user}) => {
 
         {/* Add Client Modal */}
         {isAddClientOpen && (
-          <Modal onClose={() => setIsAddClientOpen(false)} className="w-96">
+          <Modal onClose={() => setIsAddClientOpen(false)} className="w-full max-w-[500px]">
             <h2 className="text-xl font-bold mb-4 text-gray-900">
               Add New Client
             </h2>
