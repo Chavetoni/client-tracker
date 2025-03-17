@@ -1,9 +1,12 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Users, Clock, Plus, Gift, X, AlertCircle, Search, LogOut, User } from 'lucide-react';
+import { Users, Clock, Plus, Gift, X, AlertCircle, Search, LogOut, User, ChevronLeft,ChevronRight} from 'lucide-react';
 import {supabase} from '@/lib/supabase';
 import {db} from '@/lib/db';
+import ClientAssignmentModal from '@/components/ClientAssignmentModal';
+import { ClipboardEdit, History, UserPlus, Trash2 } from 'lucide-react';
+
 
 /**
  * A reusable Modal component that handles the overlay and container styling.
@@ -23,7 +26,7 @@ const Modal = ({ children, onClose, className = "" }) => (
 );
 
 /**
- * ClientHistoryModal displays a client’s follow-up and gift history
+ * ClientHistoryModal displays a client's follow-up and gift history
  * with a simple tabbed interface.
  */
 const ClientHistoryModal = ({ client, onClose }) => {
@@ -110,7 +113,7 @@ const ClientHistoryModal = ({ client, onClose }) => {
 };
 
 /**
- * UpdateClientModal allows updating a client’s follow-up and gift status.
+ * UpdateClientModal allows updating a client's follow-up and gift status.
  */
 const UpdateClientModal = ({ client, onClose, onUpdate }) => {
   // Default next follow-up date is 5 days from today.
@@ -127,7 +130,9 @@ const UpdateClientModal = ({ client, onClose, onUpdate }) => {
   });
 
   const [giftDetails, setGiftDetails] = useState({
-    status: client.giftStatus?.status || "Not Started",
+    status: client.giftStatus?.status === "In Progress"
+    ? "Not Started"
+    : (client.giftStatus?.status || "Not Started"), 
     details: "",
     notes: "",
   });
@@ -227,9 +232,8 @@ const UpdateClientModal = ({ client, onClose, onUpdate }) => {
                     status: e.target.value,
                   }))
                 }
-              >
+              >       
                 <option value="Not Started">Not Started</option>
-                <option value="In Progress">In Progress</option>
                 <option value="Sent">Sent</option>
               </select>
             </div>
@@ -274,8 +278,8 @@ const UpdateClientModal = ({ client, onClose, onUpdate }) => {
             )}
           </div>
           <p className="text-sm text-gray-500 italic mt-2">
-          Note: Gift history will only be updated if you change the status or mark a gift as sent.
-        </p>
+            Gift history will only be updated when a gift is marked as sent.
+          </p>
         </div>
 
         <div className="flex justify-end space-x-3">
@@ -305,6 +309,8 @@ const ClientTracker = ({user}) => {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+ 
 
   useEffect(() => {
     const fetchClients = async () => {
@@ -323,6 +329,17 @@ const ClientTracker = ({user}) => {
       }
     };
     fetchClients();
+    
+    const fetchCurrentUser = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        setCurrentUser(user);
+      } catch (error) {
+        console.error('Error fetching current user:', error);
+      }
+    };
+    
+    fetchCurrentUser();
   }, []);
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -333,9 +350,13 @@ const ClientTracker = ({user}) => {
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
-
+  const [isAssignmentModalOpen, setIsAssignmentModalOpen] = useState(false);
   const ONE_DAY_MS = 1000 * 60 * 60 * 24;
+  const[sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
+  const toggleSidebar = () => {
+    setSidebarCollapsed(prev => !prev);
+  };
   /**
    * Calculates the client status based on last update and next contact dates.
    * Note: The division is applied before rounding.
@@ -418,10 +439,25 @@ const ClientTracker = ({user}) => {
     }
   };
 
+  const handleUpdateAssignments = (clientId, updateData) => {
+    const updatedClients = clients.map(client => {
+      if (client.id === clientId) {
+        return {
+          ...client,
+          assignedTo: updateData.assignedTo
+        };
+      }
+      return client;
+    });
+    
+    setClients(updatedClients);
+  };
+
   const filteredClients = useMemo(() => {
     let filtered = clients.filter((client) =>
       client.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
+    
     if (viewMode === "contacts") {
       filtered = filtered.filter((client) => {
         const today = new Date();
@@ -436,27 +472,38 @@ const ClientTracker = ({user}) => {
         const daysUntilGift = Math.ceil((nextGift - today) / ONE_DAY_MS);
         return daysUntilGift <= 7;
       });
+    } else if (viewMode === "my-clients" && currentUser) {
+      filtered = filtered.filter((client) => {
+        // Check if client is assigned to current user
+        return Array.isArray(client.assignedTo) && 
+          client.assignedTo.some(person => 
+            (typeof person === 'object' && person.id === currentUser.id) ||
+            (typeof person === 'string' && person === currentUser.id)
+          );
+      });
     }
+    
     return filtered;
-  }, [clients, searchTerm, viewMode, ONE_DAY_MS]);
+  }, [clients, searchTerm, viewMode, ONE_DAY_MS, currentUser]);
 
   const handleUpdateClient = (clientId, updateData) => {
     const today = new Date()
       .toISOString()
       .split("T")[0]
       .replace(/-/g, "/");
-
+  
     const updatedClients = clients.map((client) => {
       if (client.id === clientId) {
         const updatedClient = {
           ...client,
           lastUpdate: today,
         };
-          //update follow-up if user entered notes or intentionally changed something
-          if (updateData.followUp.notes.trim() != '') {
-            updatedClient.nextContact = updateData.followUp.nextFollowUpDate;
-            updatedClient.followUpHistory = [
-              ...(client.followUpHistory || []),
+        
+        // Update follow-up if user entered notes
+        if (updateData.followUp.notes.trim() !== '') {
+          updatedClient.nextContact = updateData.followUp.nextFollowUpDate.replace(/-/g, "/");
+          updatedClient.followUpHistory = [
+            ...(client.followUpHistory || []),
             {
               date: today,
               type: updateData.followUp.type,
@@ -464,12 +511,19 @@ const ClientTracker = ({user}) => {
             },
           ];
         }
-
-        //only update gift status if its different from the current status
-        if (updateData.gift.status !== client.giftStatus?.status || updateData.gift.status === "Sent") {
+  
+        // Update gift status - only two states now: "Not Started" or "Sent"
+        if (updateData.gift.status !== client.giftStatus?.status || 
+            updateData.gift.status === "Sent") {
+            
           if (updateData.gift.status === "Sent") {
+            // When a gift is sent, schedule the next gift for 3 months later
+            const nextGiftDate = new Date();
+            nextGiftDate.setMonth(nextGiftDate.getMonth() + 3);
+            const formattedNextGiftDate = nextGiftDate.toISOString().split("T")[0].replace(/-/g, "/");
+            
             updatedClient.giftStatus = {
-              status: updateData.gift.status,
+              status: "Sent",
               lastGiftSent: today,
               lastGiftDetails: updateData.gift.details,
               giftHistory: [
@@ -481,20 +535,24 @@ const ClientTracker = ({user}) => {
                 },
               ],
             };
+            
+            // Set the next gift due date
+            updatedClient.nextGift = formattedNextGiftDate;
           } else {
+            // If not "Sent", it must be "Not Started"
             updatedClient.giftStatus = {
               ...client.giftStatus,
-              status: updateData.gift.status,
+              status: "Not Started",
             };
           }
         }
-
+  
         updatedClient.status = calculateClientStatus(updatedClient);
         return updatedClient;
       }
       return client;
     });
-
+  
     setClients(updatedClients);
   };
 
@@ -538,66 +596,107 @@ const ClientTracker = ({user}) => {
   }
   }
 
+  
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-gray-200 p-4 flex flex-col">
-        <div className="flex items-center mb-8">
-          <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold">CT</span>
+       {/* Collapsible Sidebar */}
+        <aside 
+          className={`bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ease-in-out ${
+            sidebarCollapsed ? 'w-16' : 'w-64'
+          }`}
+        >
+          <div className={`p-4 flex items-center ${sidebarCollapsed ? 'justify-center' : 'mb-8'}`}>
+            <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold">CT</span>
+            </div>
+            {!sidebarCollapsed && (
+              <span className="ml-2 text-xl font-semibold text-gray-900">
+                ClientTrack
+              </span>
+            )}
           </div>
-          <span className="ml-2 text-xl font-semibold text-gray-900">
-            ClientTrack
-          </span>
-        </div>
 
-        <nav className="space-y-2">
-          <button
-            onClick={() => setViewMode("all")}
-            className={`flex items-center space-x-3 w-full p-2 rounded-lg ${
-              viewMode === "all"
-                ? "bg-orange-50 text-orange-600"
-                : "hover:bg-gray-100 text-gray-700"
-            }`}
-          >
-            <Users size={20} />
-            <span>All Clients</span>
-          </button>
-          <button
-            onClick={() => setViewMode("contacts")}
-            className={`flex items-center space-x-3 w-full p-2 rounded-lg ${
-              viewMode === "contacts"
-                ? "bg-orange-50 text-orange-600"
-                : "hover:bg-gray-100 text-gray-700"
-            }`}
-          >
-            <Clock size={20} />
-            <span>Follow-ups</span>
-          </button>
-          <button
-            onClick={() => setViewMode("gifts")}
-            className={`flex items-center space-x-3 w-full p-2 rounded-lg ${
-              viewMode === "gifts"
-                ? "bg-orange-50 text-orange-600"
-                : "hover:bg-gray-100 text-gray-700"
-            }`}
-          >
-            <Gift size={20} />
-            <span>Gift Schedule</span>
-          </button>
-        </nav>
+          <nav className="flex-1 space-y-2 px-2">
+            <button
+              onClick={() => setViewMode("all")}
+              className={`flex items-center w-full p-2 rounded-lg ${
+                viewMode === "all"
+                  ? "bg-orange-50 text-orange-600"
+                  : "hover:bg-gray-100 text-gray-700"
+              } ${sidebarCollapsed ? 'justify-center' : 'space-x-3'}`}
+              title="All Clients"
+            >
+              <Users size={20} />
+              {!sidebarCollapsed && <span>All Clients</span>}
+            </button>
+            <button
+              onClick={() => setViewMode("contacts")}
+              className={`flex items-center w-full p-2 rounded-lg ${
+                viewMode === "contacts"
+                  ? "bg-orange-50 text-orange-600"
+                  : "hover:bg-gray-100 text-gray-700"
+              } ${sidebarCollapsed ? 'justify-center' : 'space-x-3'}`}
+              title="Follow-ups"
+            >
+              <Clock size={20} />
+              {!sidebarCollapsed && <span>Follow-ups</span>}
+            </button>
+            <button
+              onClick={() => setViewMode("gifts")}
+              className={`flex items-center w-full p-2 rounded-lg ${
+                viewMode === "gifts"
+                  ? "bg-orange-50 text-orange-600"
+                  : "hover:bg-gray-100 text-gray-700"
+              } ${sidebarCollapsed ? 'justify-center' : 'space-x-3'}`}
+              title="Gift Schedule"
+            >
+              <Gift size={20} />
+              {!sidebarCollapsed && <span>Gift Schedule</span>}
+            </button>
+            <button
+              onClick={() => setViewMode("my-clients")}
+              className={`flex items-center w-full p-2 rounded-lg ${
+                viewMode === "my-clients"
+                  ? "bg-orange-50 text-orange-600"
+                  : "hover:bg-gray-100 text-gray-700"
+              } ${sidebarCollapsed ? 'justify-center' : 'space-x-3'}`}
+              title="My Clients"
+            >
+              <User size={20} />
+              {!sidebarCollapsed && <span>My Clients</span>}
+            </button>
+          </nav>
 
-        <div className = "mt-auto pt-4 border-t border-gray-200">
-          <button
-          onClick={handleLogout}
-          className="flex items-center space-x-3 w-full p-2 rounded-lg text-red-600 hover:bg-red-50"
-          >
-            <LogOut size = {20}/>
-            <span>Sign Out</span>
-          </button>
-        </div>
+          {/* Toggle Button */}
+          <div className={`p-2 flex ${sidebarCollapsed ? 'justify-center' : 'justify-end'} mb-2`}>
+            <button
+              onClick={toggleSidebar}
+              className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100"
+              title={sidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+            >
+              {sidebarCollapsed ? (
+                <ChevronRight size={18} />
+              ) : (
+                <ChevronLeft size={18} />
+              )}
+            </button>
+          </div>
 
-      </aside>
+          <div className={`border-t border-gray-200 p-2 ${sidebarCollapsed ? 'flex justify-center' : ''}`}>
+            <button
+              onClick={handleLogout}
+              className={`flex items-center p-2 rounded-lg text-red-600 hover:bg-red-50 ${
+                sidebarCollapsed ? 'justify-center w-10 h-10' : 'space-x-3 w-full'
+              }`}
+              title="Sign Out"
+            >
+              <LogOut size={20} />
+              {!sidebarCollapsed && <span>Sign Out</span>}
+            </button>
+          </div>
+        </aside>
+
+
 
       {/* Main Content */}
       <main className="flex-1 p-8">
@@ -607,7 +706,9 @@ const ClientTracker = ({user}) => {
               ? "All Clients"
               : viewMode === "contacts"
               ? "Follow-up Schedule"
-              : "Gift Schedule"}
+              : viewMode === "gifts"
+              ? "Gift Schedule"
+              : "My Assigned Clients"}
           </h1>
           <button
             onClick={() => setIsAddClientOpen(true)}
@@ -722,6 +823,18 @@ const ClientTracker = ({user}) => {
             }}
           />
         )}
+        
+        {/* Assignment Modal */}
+        {isAssignmentModalOpen && selectedClient && (
+          <ClientAssignmentModal
+            client={selectedClient}
+            onClose={() => {
+              setIsAssignmentModalOpen(false);
+              setSelectedClient(null);
+            }}
+            onUpdate={handleUpdateAssignments}
+          />
+        )}
 
         {/* Search Bar */}
         <div className="mb-6 relative">
@@ -748,6 +861,11 @@ const ClientTracker = ({user}) => {
               Showing clients with a gift due within the next 7 days or past due.
             </p>
           )}
+          {viewMode === "my-clients" && (
+            <p>
+              Showing clients assigned to you.
+            </p>
+          )}
           {filteredClients.length === 0 && (
             <p className="text-orange-600">
               No clients match the current filter criteria.
@@ -758,18 +876,18 @@ const ClientTracker = ({user}) => {
         {/* Client List */}
         <div className="bg-white rounded-lg border border-gray-200">
 
-          <div className="grid grid-cols-[repeat(7,1fr)_minmax(150px,1fr)] gap-4 p-4 border-b border-gray-200 bg-gray-50">
-  {['Client Name', 'Email', 'Status', 'Last Update', 'Next Follow-up', 'Next Gift Due', 'Assigned To', 'Actions'].map((header) => (
-    <div key={header} className="font-medium text-gray-900">{header}</div>
-  ))}
-</div>
+        <div className="grid grid-cols-[1.5fr_1.5fr_1fr_1fr_1fr_1fr_0.8fr_1fr] gap-4 p-4 border-b border-gray-200 bg-gray-50">
+          {['Client Name', 'Email', 'Status', 'Last Update', 'Next Follow-up', 'Next Gift Due', 'Assigned To', 'Actions'].map((header) => (
+            <div key={header} className="font-medium text-gray-900">{header}</div>
+          ))}
+        </div>
 
 
           <div className="divide-y divide-gray-200">
             {filteredClients.map((client) => (
               <div
                 key={client.id}
-                className="grid grid-cols-8 gap-4 p-4 hover:bg-gray-50"
+                className="grid grid-cols-[1.5fr_1.5fr_1fr_1fr_1fr_1fr_0.8fr_1fr] gap-4 p-4 hover:bg-gray-50"
               >
                 <div className="font-medium text-gray-900">{client.name}</div>
                 <div className="text-gray-900">{client.email}</div>
@@ -784,7 +902,7 @@ const ClientTracker = ({user}) => {
                 </div>
                 <div className="text-gray-900">{client.lastUpdate}</div>
                 <div
-                  className={`flex items-center gap-2 ${
+                  className={`${
                     isDatePast(client.nextContact)
                       ? "text-red-600 font-medium"
                       : isDateSoon(client.nextContact)
@@ -804,57 +922,84 @@ const ClientTracker = ({user}) => {
                 >
                   {client.nextGift}
                 </div>
-                <div className="flex -space-x-2">
-                  {client.assignedTo.map((person, index) => (
-                    <div
-                      key={index}
-                      className="w-8 h-8 rounded-full bg-gray-300 border-2 border-white flex items-center justify-center text-gray-900"
-                      title={person}
-                    >
-                      {person.charAt(0)}
-                    </div>
-                  ))  || (  // Add a fallback for when assignedTo is undefined
+
+                <div className="flex -space-x-2 overflow-hidden">
+                  {Array.isArray(client.assignedTo) && 
+                  (client.assignedTo[0] === 'Unassigned' ? (
                     <div
                       className="w-8 h-8 rounded-full bg-gray-300 border-2 border-white flex items-center justify-center text-gray-900"
                       title="Unassigned"
                     >
                       U
                     </div>
-                  )}
+                  ) : (
+                    client.assignedTo.map((person, index) => (
+                      <div
+                        key={index}
+                        className="w-8 h-8 rounded-full bg-orange-300 border-2 border-white flex items-center justify-center text-white"
+                        title={person.name || person.email || person}
+                      >
+                        {(person.name ? person.name[0] : person.email ? person.email[0] : person[0]).toUpperCase()}
+                      </div>
+                    ))
+                  ))}
                 </div>
+
                 <div>
 
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => {
-                        setSelectedClient(client);
-                        setIsUpdateModalOpen(true);
-                      }}
-                      className="text-sm px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700"
-                    >
-                      Update Status
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSelectedClient(client);
-                        setIsHistoryModalOpen(true);
-                      }}
-                      className="text-sm px-3 py-1 bg-blue-50 hover:bg-blue-100 rounded-lg text-blue-600"
-                    >
-                      View History
-                    </button>
-                    <button
-                      onClick={() => setClientToDelete(client.id)}
-                      className="text-sm px-3 py-1 bg-red-50 hover:bg-red-100 rounded-lg text-red-600"
-                    >
-                      Remove
-                    </button>
-                  </div>
+                <div className="flex flex-col space-y-1">
+  <button
+    onClick={() => {
+      setSelectedClient(client);
+      setIsUpdateModalOpen(true);
+    }}
+    className="flex items-center justify-start w-full px-2 py-1 bg-gray-50 hover:bg-gray-100 rounded text-gray-700 text-xs"
+    title="Update Status"
+  >
+    <ClipboardEdit size={14} className="mr-1" />
+    Update
+  </button>
+  
+  <button
+    onClick={() => {
+      setSelectedClient(client);
+      setIsHistoryModalOpen(true);
+    }}
+    className="flex items-center justify-start w-full px-2 py-1 bg-blue-50 hover:bg-blue-100 rounded text-blue-600 text-xs"
+    title="View History"
+  >
+    <History size={14} className="mr-1" />
+    History
+  </button>
+  
+  <button
+    onClick={() => {
+      setSelectedClient(client);
+      setIsAssignmentModalOpen(true);
+    }}
+    className="flex items-center justify-start w-full px-2 py-1 bg-purple-50 hover:bg-purple-100 rounded text-purple-600 text-xs"
+    title="Assign Users"
+  >
+    <UserPlus size={14} className="mr-1" />
+    Assign
+  </button>
+  
+  <button
+    onClick={() => setClientToDelete(client.id)}
+    className="flex items-center justify-start w-full px-2 py-1 bg-red-50 hover:bg-red-100 rounded text-red-600 text-xs"
+    title="Remove Client"
+  >
+    <Trash2 size={14} className="mr-1" />
+    Remove
+  </button>
+</div>
 
                 </div>
               </div>
             ))}
           </div>
+
+
         </div>
       </main>
     </div>
