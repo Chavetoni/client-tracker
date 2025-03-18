@@ -1,22 +1,21 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Users, Clock, Plus, Gift, X, AlertCircle, Search, LogOut, User, ChevronLeft,ChevronRight} from 'lucide-react';
+import React, { useState, useEffect, useMemo, useCallback, use } from 'react';
+import { Users, Clock, Plus, Gift, X, AlertCircle, Search, LogOut, User, ChevronLeft,ChevronRight, Moon, Sun} from 'lucide-react';
 import {supabase} from '@/lib/supabase';
 import {db} from '@/lib/db';
 import ClientAssignmentModal from '@/components/ClientAssignmentModal';
 import { ClipboardEdit, History, UserPlus, Trash2 } from 'lucide-react';
 
-
 /**
  * A reusable Modal component that handles the overlay and container styling.
  */
 const Modal = ({ children, onClose, className = "" }) => (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto py-8">
-    <div className={`bg-white rounded-lg p-6 relative max-h-[90vh] overflow-y-auto ${className}`}>
+  <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 overflow-y-auto py-8">
+    <div className={`bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg p-6 relative max-h-[90vh] overflow-y-auto ${className}`}>
       <button
         onClick={onClose}
-        className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10"
+        className="absolute top-4 right-4 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 z-10"
       >
         <X size={20} />
       </button>
@@ -34,16 +33,16 @@ const ClientHistoryModal = ({ client, onClose }) => {
 
   return (
     <Modal onClose={onClose} className="w-[800px] max-h-[80vh]">
-      <h2 className="text-xl font-bold mb-4 text-gray-900">
+      <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
         {client.name} - Interaction History
       </h2>
       {/* Tab Navigation */}
-      <div className="flex space-x-4 mb-4 border-b">
+      <div className="flex space-x-4 mb-4 border-b border-gray-200 dark:border-gray-700">
         <button
           className={`pb-2 px-4 ${
             activeTab === "follow-ups"
-              ? "border-b-2 border-orange-500 text-orange-600"
-              : "text-gray-600"
+              ? "border-b-2 border-orange-500 text-orange-600 dark:text-orange-400"
+              : "text-gray-600 dark:text-gray-400"
           }`}
           onClick={() => setActiveTab("follow-ups")}
         >
@@ -52,15 +51,15 @@ const ClientHistoryModal = ({ client, onClose }) => {
         <button
           className={`pb-2 px-4 ${
             activeTab === "gifts"
-              ? "border-b-2 border-orange-500 text-orange-600"
-              : "text-gray-600"
+              ? "border-b-2 border-orange-500 text-orange-600 dark:text-orange-400"
+              : "text-gray-600 dark:text-gray-400"
           }`}
           onClick={() => setActiveTab("gifts")}
         >
           Gifts
         </button>
       </div>
-
+  
       {/* Content Area */}
       <div className="overflow-y-auto max-h-[60vh]">
         {activeTab === "follow-ups" ? (
@@ -68,22 +67,22 @@ const ClientHistoryModal = ({ client, onClose }) => {
             {[...(client.followUpHistory || [])]
               .reverse()
               .map((interaction, index) => (
-                <div key={index} className="bg-gray-50 p-4 rounded-lg">
+                <div key={index} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                   <div className="flex justify-between mb-2">
-                    <span className="text-gray-900 font-medium">
+                    <span className="text-gray-900 dark:text-white font-medium">
                       {new Date(interaction.date).toLocaleDateString()}
                     </span>
                     <span
                       className={`px-2 py-1 rounded-full text-sm ${
                         interaction.type === "email"
-                          ? "bg-blue-100 text-blue-800"
-                          : "bg-green-100 text-green-800"
+                          ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
+                          : "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
                       }`}
                     >
                       {interaction.type}
                     </span>
                   </div>
-                  <p className="text-gray-700">{interaction.notes}</p>
+                  <p className="text-gray-700 dark:text-gray-300">{interaction.notes}</p>
                 </div>
               ))}
           </div>
@@ -92,17 +91,17 @@ const ClientHistoryModal = ({ client, onClose }) => {
             {[...(client.giftStatus?.giftHistory || [])]
               .reverse()
               .map((gift, index) => (
-                <div key={index} className="bg-gray-50 p-4 rounded-lg">
+                <div key={index} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                   <div className="flex justify-between mb-2">
-                    <span className="text-gray-900 font-medium">
+                    <span className="text-gray-900 dark:text-white font-medium">
                       {new Date(gift.date).toLocaleDateString()}
                     </span>
-                    <span className="px-2 py-1 rounded-full text-sm bg-purple-100 text-purple-800">
+                    <span className="px-2 py-1 rounded-full text-sm bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300">
                       Gift Sent
                     </span>
                   </div>
-                  <p className="text-gray-900 font-medium">{gift.gift}</p>
-                  <p className="text-gray-700 mt-1">{gift.notes}</p>
+                  <p className="text-gray-900 dark:text-white font-medium">{gift.gift}</p>
+                  <p className="text-gray-700 dark:text-gray-300 mt-1">{gift.notes}</p>
                 </div>
               ))}
           </div>
@@ -148,20 +147,20 @@ const UpdateClientModal = ({ client, onClose, onUpdate }) => {
 
   return (
     <Modal onClose={onClose} className="w-[800px] md:w-[700px] sm:w-[90%]">
-      <h2 className="text-xl font-bold mb-4 text-gray-900">
+      <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
         Update Client Status
       </h2>
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Follow-up Section */}
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <h3 className="font-medium text-gray-900 mb-4">Follow-up Status</h3>
+        <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+          <h3 className="font-medium text-gray-900 dark:text-white mb-4">Follow-up Status</h3>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-900 mb-1">
+              <label className="block text-sm font-medium text-gray-900 dark:text-gray-200 mb-1">
                 Type of Follow-up
               </label>
               <select
-                className="w-full p-2 border border-gray-200 rounded-lg text-gray-900"
+                className="w-full p-2 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-800 focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-600"
                 value={followUpDetails.type}
                 onChange={(e) =>
                   setFollowUpDetails((prev) => ({
@@ -174,13 +173,13 @@ const UpdateClientModal = ({ client, onClose, onUpdate }) => {
                 <option value="call">Phone Call</option>
               </select>
             </div>
-
+  
             <div>
-              <label className="block text-sm font-medium text-gray-900 mb-1">
+              <label className="block text-sm font-medium text-gray-900 dark:text-gray-200 mb-1">
                 Follow-up Notes
               </label>
               <textarea
-                className="w-full p-2 border border-gray-200 rounded-lg text-gray-900"
+                className="w-full p-2 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-800 focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-600"
                 value={followUpDetails.notes}
                 onChange={(e) =>
                   setFollowUpDetails((prev) => ({
@@ -192,14 +191,14 @@ const UpdateClientModal = ({ client, onClose, onUpdate }) => {
                 rows={2}
               />
             </div>
-
+  
             <div>
-              <label className="block text-sm font-medium text-gray-900 mb-1">
+              <label className="block text-sm font-medium text-gray-900 dark:text-gray-200 mb-1">
                 Next Follow-up Date
               </label>
               <input
                 type="date"
-                className="w-full p-2 border border-gray-200 rounded-lg text-gray-900"
+                className="w-full p-2 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-800 focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-600"
                 value={followUpDetails.nextFollowUpDate}
                 onChange={(e) =>
                   setFollowUpDetails((prev) => ({
@@ -209,22 +208,22 @@ const UpdateClientModal = ({ client, onClose, onUpdate }) => {
                 }
               />
             </div>
-            <p className="text-sm text-gray-500 italic">
-            Note: A follow-up entry will only be recorded if you enter notes.
-          </p>
+            <p className="text-sm text-gray-500 dark:text-gray-300 italic">
+              Note: A follow-up entry will only be recorded if you enter notes.
+            </p>
           </div>
         </div>
-
+  
         {/* Gift Section */}
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <h3 className="font-medium text-gray-900 mb-4">Gift Status</h3>
+        <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+          <h3 className="font-medium text-gray-900 dark:text-white mb-4">Gift Status</h3>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-900 mb-1">
+              <label className="block text-sm font-medium text-gray-900 dark:text-gray-200 mb-1">
                 Gift Status
               </label>
               <select
-                className="w-full p-2 border border-gray-200 rounded-lg text-gray-900"
+                className="w-full p-2 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-800 focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-600"
                 value={giftDetails.status}
                 onChange={(e) =>
                   setGiftDetails((prev) => ({
@@ -237,16 +236,16 @@ const UpdateClientModal = ({ client, onClose, onUpdate }) => {
                 <option value="Sent">Sent</option>
               </select>
             </div>
-
+  
             {giftDetails.status === "Sent" && (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-1">
+                  <label className="block text-sm font-medium text-gray-900 dark:text-gray-200 mb-1">
                     Gift Details
                   </label>
                   <input
                     type="text"
-                    className="w-full p-2 border border-gray-200 rounded-lg text-gray-900"
+                    className="w-full p-2 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-800 focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-600"
                     value={giftDetails.details}
                     onChange={(e) =>
                       setGiftDetails((prev) => ({
@@ -258,11 +257,11 @@ const UpdateClientModal = ({ client, onClose, onUpdate }) => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-1">
+                  <label className="block text-sm font-medium text-gray-900 dark:text-gray-200 mb-1">
                     Gift Notes
                   </label>
                   <textarea
-                    className="w-full p-2 border border-gray-200 rounded-lg text-gray-900"
+                    className="w-full p-2 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-800 focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-600"
                     value={giftDetails.notes}
                     onChange={(e) =>
                       setGiftDetails((prev) => ({
@@ -277,22 +276,22 @@ const UpdateClientModal = ({ client, onClose, onUpdate }) => {
               </>
             )}
           </div>
-          <p className="text-sm text-gray-500 italic mt-2">
+          <p className="text-sm text-gray-500 dark:text-gray-300 italic mt-2">
             Gift history will only be updated when a gift is marked as sent.
           </p>
         </div>
-
+  
         <div className="flex justify-end space-x-3">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+            className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+            className="px-4 py-2 bg-orange-500 hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-700 text-white rounded-lg"
           >
             Update Client
           </button>
@@ -310,6 +309,7 @@ const ClientTracker = ({user}) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const [darkMode, setDarkMode] = useState(false);
  
 
   useEffect(() => {
@@ -341,6 +341,35 @@ const ClientTracker = ({user}) => {
     
     fetchCurrentUser();
   }, []);
+
+  useEffect(() => {
+    const isDarkMode = localStorage.getItem('darkMode')
+    setDarkMode(isDarkMode);
+
+    if (isDarkMode){
+      document.documentElement.classList.add('dark');
+    }else{
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
+
+  const toggleDarkMode = () => {
+    setDarkMode(prevMode => {
+      const newMode = !prevMode;
+      
+      // Save preference to localStorage
+      localStorage.setItem('darkMode', newMode.toString());
+      
+      // Apply or remove the dark class on the document
+      if (newMode) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+      
+      return newMode;
+    });
+  };
 
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState("all");
@@ -598,10 +627,10 @@ const ClientTracker = ({user}) => {
 
   
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
        {/* Collapsible Sidebar */}
         <aside 
-          className={`bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ease-in-out ${
+          className={`bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300 ease-in-out  ${
             sidebarCollapsed ? 'w-16' : 'w-64'
           }`}
         >
@@ -610,19 +639,19 @@ const ClientTracker = ({user}) => {
               <span className="text-white font-bold">CT</span>
             </div>
             {!sidebarCollapsed && (
-              <span className="ml-2 text-xl font-semibold text-gray-900">
+              <span className="ml-2 text-xl font-semibold text-gray-900 dark:text-white">
                 ClientTrack
               </span>
             )}
           </div>
 
-          <nav className="flex-1 space-y-2 px-2">
+          <nav className="flex-1 space-y-2 px-2 ">
             <button
               onClick={() => setViewMode("all")}
-              className={`flex items-center w-full p-2 rounded-lg ${
+              className={`flex items-center w-full p-2 rounded-lg  ${
                 viewMode === "all"
-                  ? "bg-orange-50 text-orange-600"
-                  : "hover:bg-gray-100 text-gray-700"
+                  ? "bg-orange-50 text-orange-600 dark:bg-gray-700 dark:text-orange-400 "
+                  : "hover:bg-gray-100 text-gray-700 dark:hover:bg-gray-700 dark:text-white"
               } ${sidebarCollapsed ? 'justify-center' : 'space-x-3'}`}
               title="All Clients"
             >
@@ -633,8 +662,8 @@ const ClientTracker = ({user}) => {
               onClick={() => setViewMode("contacts")}
               className={`flex items-center w-full p-2 rounded-lg ${
                 viewMode === "contacts"
-                  ? "bg-orange-50 text-orange-600"
-                  : "hover:bg-gray-100 text-gray-700"
+                  ? "bg-orange-50 text-orange-600 dark:bg-gray-700 dark:text-orange-400"
+                  : "hover:bg-gray-100 text-gray-700 dark:hover:bg-gray-700 dark:text-white"
               } ${sidebarCollapsed ? 'justify-center' : 'space-x-3'}`}
               title="Follow-ups"
             >
@@ -645,8 +674,8 @@ const ClientTracker = ({user}) => {
               onClick={() => setViewMode("gifts")}
               className={`flex items-center w-full p-2 rounded-lg ${
                 viewMode === "gifts"
-                  ? "bg-orange-50 text-orange-600"
-                  : "hover:bg-gray-100 text-gray-700"
+                  ? "bg-orange-50 text-orange-600 dark:bg-gray-700 dark:text-orange-400"
+                  : "hover:bg-gray-100 text-gray-700 dark:hover:bg-gray-700 dark:text-white"
               } ${sidebarCollapsed ? 'justify-center' : 'space-x-3'}`}
               title="Gift Schedule"
             >
@@ -657,8 +686,8 @@ const ClientTracker = ({user}) => {
               onClick={() => setViewMode("my-clients")}
               className={`flex items-center w-full p-2 rounded-lg ${
                 viewMode === "my-clients"
-                  ? "bg-orange-50 text-orange-600"
-                  : "hover:bg-gray-100 text-gray-700"
+                  ? "bg-orange-50 text-orange-600 dark:bg-gray-700 dark:text-orange-400"
+                  : "hover:bg-gray-100 text-gray-700 dark:hover:bg-gray-700 dark:text-white"
               } ${sidebarCollapsed ? 'justify-center' : 'space-x-3'}`}
               title="My Clients"
             >
@@ -682,6 +711,28 @@ const ClientTracker = ({user}) => {
             </button>
           </div>
 
+          <div className={`border-t border-gray-200 dark:border-gray-700 p-2 ${sidebarCollapsed ? 'flex justify-center' : ''}`}>
+            <button
+              onClick={toggleDarkMode}
+              className={`flex items-center p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                sidebarCollapsed ? 'justify-center w-10 h-10' : 'space-x-3 w-full'
+              }`}
+              title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+              {darkMode ? (
+                <>
+                  <Sun size={20} />
+                  {!sidebarCollapsed && <span>Light Mode</span>}
+                </>
+              ) : (
+                <>
+                  <Moon size={20} />
+                  {!sidebarCollapsed && <span>Dark Mode</span>}
+                </>
+              )}
+            </button>
+          </div>
+
           <div className={`border-t border-gray-200 p-2 ${sidebarCollapsed ? 'flex justify-center' : ''}`}>
             <button
               onClick={handleLogout}
@@ -699,9 +750,9 @@ const ClientTracker = ({user}) => {
 
 
       {/* Main Content */}
-      <main className="flex-1 p-8">
+      <main className="flex-1 p-8 overflow-y-auto">
         <div className="mb-6 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             {viewMode === "all"
               ? "All Clients"
               : viewMode === "contacts"
@@ -710,9 +761,12 @@ const ClientTracker = ({user}) => {
               ? "Gift Schedule"
               : "My Assigned Clients"}
           </h1>
+
+
+          {/*Add Client button*/}
           <button
             onClick={() => setIsAddClientOpen(true)}
-            className="flex items-center px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+            className="flex items-center px-4 py-2 bg-orange-500 hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-700 text-white rounded-lg"
           >
             <Plus size={20} className="mr-2" />
             Add Client
@@ -722,64 +776,64 @@ const ClientTracker = ({user}) => {
         {/* Add Client Modal */}
         {isAddClientOpen && (
           <Modal onClose={() => setIsAddClientOpen(false)} className="w-full max-w-[500px]">
-            <h2 className="text-xl font-bold mb-4 text-gray-900">
-              Add New Client
-            </h2>
-            <form onSubmit={handleAddClient}>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-900 mb-1">
-                  Client Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  className="w-full p-2 border border-gray-200 rounded-lg text-gray-900"
-                  value={newClient.name}
-                  onChange={(e) =>
-                    setNewClient((prev) => ({ ...prev, name: e.target.value }))
-                  }
-                />
-              </div>
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  required
-                  className="w-full p-2 border border-gray-200 rounded-lg text-gray-900"
-                  value={newClient.email}
-                  onChange={(e) =>
-                    setNewClient((prev) => ({ ...prev, email: e.target.value }))
-                  }
-                />
-              </div>
-              <div className="flex justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={() => setIsAddClientOpen(false)}
-                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
-                >
-                  Add Client
-                </button>
-              </div>
-            </form>
-          </Modal>
+          <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
+            Add New Client
+          </h2>
+          <form onSubmit={handleAddClient}>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-900 dark:text-gray-200 mb-1">
+                Client Name
+              </label>
+              <input
+                type="text"
+                required
+                className="w-full p-2 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-800 focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-600"
+                value={newClient.name}
+                onChange={(e) =>
+                  setNewClient((prev) => ({ ...prev, name: e.target.value }))
+                }
+              />
+            </div>
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-900 dark:text-gray-200 mb-1">
+                Email Address
+              </label>
+              <input
+                type="email"
+                required
+                className="w-full p-2 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-800 focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-600"
+                value={newClient.email}
+                onChange={(e) =>
+                  setNewClient((prev) => ({ ...prev, email: e.target.value }))
+                }
+              />
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button
+                type="button"
+                onClick={() => setIsAddClientOpen(false)}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-orange-500 hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-700 text-white rounded-lg"
+              >
+                Add Client
+              </button>
+            </div>
+          </form>
+        </Modal>
         )}
 
         {/* Delete Confirmation Modal */}
         {clientToDelete && (
           <Modal onClose={() => setClientToDelete(null)} className="w-96">
-            <h2 className="text-xl font-bold mb-4 text-gray-900">
+            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-gray-200">
               Confirm Deletion
             </h2>
-            <p className="text-gray-700 mb-6">
+            <p className="text-gray-700 mb-6 dark:text-gray-200">
               Are you sure you want to remove{" "}
               {clients.find((c) => c.id === clientToDelete)?.name}? This action
               cannot be undone.
@@ -787,13 +841,13 @@ const ClientTracker = ({user}) => {
             <div className="flex justify-end space-x-3">
               <button
                 onClick={() => setClientToDelete(null)}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                className="px-4 py-2 text-gray-700 hover:bg-gray-100  rounded-lg dark:text-gray-200 hover:dark:bg-gray-600"
               >
                 Cancel
               </button>
               <button
                 onClick={() => handleDeleteClient(clientToDelete)}
-                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 "
               >
                 Delete Client
               </button>
@@ -838,11 +892,11 @@ const ClientTracker = ({user}) => {
 
         {/* Search Bar */}
         <div className="mb-6 relative">
-          <Search className="absolute left-3 top-2.5 text-gray-400" size={20} />
+          <Search className="absolute left-3 top-2.5 text-gray-400 dark:text-gray-500" size={20} />
           <input
             type="text"
             placeholder="Search clients..."
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-gray-900"
+            className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-800 focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-600"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -874,23 +928,26 @@ const ClientTracker = ({user}) => {
         </div>
 
         {/* Client List */}
-        <div className="bg-white rounded-lg border border-gray-200">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
 
-        <div className="grid grid-cols-[1.5fr_1.5fr_1fr_1fr_1fr_1fr_0.8fr_1fr] gap-4 p-4 border-b border-gray-200 bg-gray-50">
+        {/* Table header */}
+        <div className="grid grid-cols-[repeat(7,1fr)_minmax(150px,1fr)] gap-4 p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
           {['Client Name', 'Email', 'Status', 'Last Update', 'Next Follow-up', 'Next Gift Due', 'Assigned To', 'Actions'].map((header) => (
-            <div key={header} className="font-medium text-gray-900">{header}</div>
+            <div key={header} className="font-medium text-gray-900 dark:text-gray-200">{header}</div>
           ))}
         </div>
 
-
-          <div className="divide-y divide-gray-200">
+          {/* Table rows */}
+        <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {filteredClients.map((client) => (
               <div
                 key={client.id}
-                className="grid grid-cols-[1.5fr_1.5fr_1fr_1fr_1fr_1fr_0.8fr_1fr] gap-4 p-4 hover:bg-gray-50"
+                className="grid grid-cols-[repeat(7,1fr)_minmax(150px,1fr)] gap-4 p-4 hover:bg-gray-50 dark:hover:bg-gray-750"
               >
-                <div className="font-medium text-gray-900">{client.name}</div>
-                <div className="text-gray-900">{client.email}</div>
+                <div className="font-medium text-gray-900 dark:text-white">{client.name}</div>
+                <div className="text-gray-900 dark:text-gray-200">{client.email}</div>
+                
+                {/* Status badges - keep colors similar in dark mode for status indicators */}
                 <div>
                   <span
                     className={`px-2 py-1 rounded-full text-sm ${getStatusColor(
@@ -900,14 +957,14 @@ const ClientTracker = ({user}) => {
                     {client.status}
                   </span>
                 </div>
-                <div className="text-gray-900">{client.lastUpdate}</div>
+                <div className="text-gray-900 dark:text-gray-200">{client.lastUpdate}</div>
                 <div
                   className={`${
                     isDatePast(client.nextContact)
                       ? "text-red-600 font-medium"
                       : isDateSoon(client.nextContact)
                       ? "text-yellow-600 font-medium"
-                      : "text-gray-700"
+                      : "text-gray-700 dark:text-gray-200"
                   }`}
                 >
                   {client.nextContact}
@@ -917,7 +974,7 @@ const ClientTracker = ({user}) => {
                   className={
                     isDateSoon(client.nextGift)
                       ? "text-purple-600 font-medium"
-                      : "text-gray-700"
+                      : "text-gray-700 dark:text-gray-200"
                   }
                 >
                   {client.nextGift}
@@ -953,7 +1010,7 @@ const ClientTracker = ({user}) => {
       setSelectedClient(client);
       setIsUpdateModalOpen(true);
     }}
-    className="flex items-center justify-start w-full px-2 py-1 bg-gray-50 hover:bg-gray-100 rounded text-gray-700 text-xs"
+    className="flex items-center justify-start w-full px-2 py-1 bg-gray-50 hover:bg-gray-100 rounded text-gray-700 text-xs dark:bg-gray-600 dark:text-white"
     title="Update Status"
   >
     <ClipboardEdit size={14} className="mr-1" />
@@ -965,7 +1022,7 @@ const ClientTracker = ({user}) => {
       setSelectedClient(client);
       setIsHistoryModalOpen(true);
     }}
-    className="flex items-center justify-start w-full px-2 py-1 bg-blue-50 hover:bg-blue-100 rounded text-blue-600 text-xs"
+    className="flex items-center justify-start w-full px-2 py-1 bg-blue-50 hover:bg-blue-100 rounded text-blue-600 text-xs dark:bg-gray-600 dark:text-blue-400"
     title="View History"
   >
     <History size={14} className="mr-1" />
@@ -977,7 +1034,7 @@ const ClientTracker = ({user}) => {
       setSelectedClient(client);
       setIsAssignmentModalOpen(true);
     }}
-    className="flex items-center justify-start w-full px-2 py-1 bg-purple-50 hover:bg-purple-100 rounded text-purple-600 text-xs"
+    className="flex items-center justify-start w-full px-2 py-1 bg-purple-50 hover:bg-purple-100 rounded text-purple-600 text-xs dark:bg-gray-600 dark:text-purple-400"
     title="Assign Users"
   >
     <UserPlus size={14} className="mr-1" />
@@ -986,7 +1043,7 @@ const ClientTracker = ({user}) => {
   
   <button
     onClick={() => setClientToDelete(client.id)}
-    className="flex items-center justify-start w-full px-2 py-1 bg-red-50 hover:bg-red-100 rounded text-red-600 text-xs"
+    className="flex items-center justify-start w-full px-2 py-1 bg-red-50 hover:bg-red-100 rounded text-red-600 text-xs dark:bg-gray-600 dark:text-red-400"
     title="Remove Client"
   >
     <Trash2 size={14} className="mr-1" />
