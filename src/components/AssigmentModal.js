@@ -1,4 +1,6 @@
-// src/components/AssignmentModal.js
+import React, {useState} from 'react';
+import { X } from 'lucide-react';
+
 const AssignmentModal = ({ client, onClose, onUpdate }) => {
     const [availableUsers, setAvailableUsers] = useState([]);
     const [selectedUsers, setSelectedUsers] = useState(
@@ -86,3 +88,5 @@ const AssignmentModal = ({ client, onClose, onUpdate }) => {
       </Modal>
     );
   };
+
+export default AssignmentModal;

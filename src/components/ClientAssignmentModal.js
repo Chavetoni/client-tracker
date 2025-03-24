@@ -33,26 +33,50 @@ const ClientAssignmentModal = ({ client, onClose, onUpdate }) => {
     const fetchUsers = async () => {
       setLoading(true);
       try {
-        // In a real implementation, you would fetch users from Supabase
-        // For now, we'll use mock data
-        const mockUsers = [
-          { id: '1', email: 'user1@example.com', name: 'User One' },
-          { id: '2', email: 'user2@example.com', name: 'User Two' },
-          { id: '3', email: 'user3@example.com', name: 'User Three' },
-        ];
+        // First try to fetch from profiles table
+        const { data: profiles, error } = await supabase
+          .from('profiles')
+          .select('id, email, name')
+          .order('email');
+          
+        if (error) throw error;
         
-        // Add the current user if they're not in the mock list
-        if (currentUser && !mockUsers.find(u => u.id === currentUser.id)) {
-          mockUsers.push({
+        if (profiles && profiles.length > 0) {
+          setUsers(profiles);
+        } else {
+          // If no profiles, use current user as fallback
+          if (currentUser) {
+            const userWithName = {
+              id: currentUser.id,
+              email: currentUser.email,
+              name: currentUser.email.split('@')[0]
+            };
+            setUsers([userWithName]);
+          } else {
+            // Use mock data as absolute fallback
+            const mockUsers = [
+              { id: '1', email: 'user1@example.com', name: 'User One' },
+              { id: '2', email: 'user2@example.com', name: 'User Two' }
+            ];
+            setUsers(mockUsers);
+          }
+        }
+      } catch (error) {
+        console.warn('Error fetching users:', error);
+        
+        // Fallback to just current user
+        if (currentUser) {
+          setUsers([{
             id: currentUser.id,
             email: currentUser.email,
             name: currentUser.email.split('@')[0]
-          });
+          }]);
+        } else {
+          // Mock data as last resort
+          setUsers([
+            { id: '1', email: 'user1@example.com', name: 'User One' }
+          ]);
         }
-        
-        setUsers(mockUsers);
-      } catch (error) {
-        console.error('Error fetching users:', error);
       } finally {
         setLoading(false);
       }
@@ -77,8 +101,12 @@ const ClientAssignmentModal = ({ client, onClose, onUpdate }) => {
   const handleSelfAssign = () => {
     if (!currentUser) return;
     
-    const user = users.find(u => u.id === currentUser.id);
-    if (!user) return;
+    // Create a user object from current user
+    const user = {
+      id: currentUser.id,
+      email: currentUser.email,
+      name: currentUser.email.split('@')[0]
+    };
     
     // If already assigned, do nothing
     if (selectedUsers.some(u => typeof u === 'object' ? u.id === user.id : u === user.id)) {
@@ -88,18 +116,76 @@ const ClientAssignmentModal = ({ client, onClose, onUpdate }) => {
     setSelectedUsers(prev => [...prev, user]);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     
     try {
+      // Ensure profile exists for current user
+      if (currentUser) {
+        // Check if profile exists
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', currentUser.id);
+          
+        if (profileError || !profile || profile.length === 0) {
+          // Create profile if it doesn't exist
+          await supabase.from('profiles').insert([{
+            id: currentUser.id,
+            email: currentUser.email,
+            name: currentUser.email.split('@')[0]
+          }]);
+        }
+      }
+      
+      // For each selected user, create an assignment if it doesn't exist
+      for (const user of selectedUsers) {
+        const userId = typeof user === 'object' ? user.id : user;
+        
+        // Check if the assignment already exists
+        const { data: existingAssignment } = await supabase
+          .from('client_assignments')
+          .select('*')
+          .eq('client_id', client.id)
+          .eq('user_id', userId);
+          
+        if (!existingAssignment || existingAssignment.length === 0) {
+          // Create new assignment
+          await supabase.from('client_assignments').insert([{
+            client_id: client.id,
+            user_id: userId,
+            assigned_at: new Date().toISOString()
+          }]);
+        }
+      }
+      
+      // For users in assignedTo but not in selectedUsers, delete assignments
+      const currentAssignedIds = client.assignedTo
+        .filter(user => user !== 'Unassigned')
+        .map(user => typeof user === 'object' ? user.id : user);
+        
+      const selectedIds = selectedUsers.map(user => typeof user === 'object' ? user.id : user);
+      
+      const idsToRemove = currentAssignedIds.filter(id => !selectedIds.includes(id));
+      
+      for (const idToRemove of idsToRemove) {
+        await supabase
+          .from('client_assignments')
+          .delete()
+          .eq('client_id', client.id)
+          .eq('user_id', idToRemove);
+      }
+      
       // Transform the data for the parent component
       onUpdate(client.id, {
         assignedTo: selectedUsers.length > 0 ? selectedUsers : ['Unassigned']
       });
+      
       onClose();
     } catch (error) {
       console.error('Error updating assignments:', error);
+      alert('Failed to update assignments. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -137,6 +223,10 @@ const ClientAssignmentModal = ({ client, onClose, onUpdate }) => {
           <div className="space-y-2 max-h-60 overflow-y-auto">
             {loading ? (
               <div className="py-4 text-center text-gray-500 dark:text-gray-400">Loading users...</div>
+            ) : users.length === 0 ? (
+              <div className="py-4 text-center text-gray-500 dark:text-gray-400">
+                No users available. Use "Assign to Myself" option.
+              </div>
             ) : (
               users.map(user => (
                 <label key={user.id} className="flex items-center p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg cursor-pointer">

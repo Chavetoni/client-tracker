@@ -5,6 +5,7 @@ import { Users, Clock, Plus, Gift, X, AlertCircle, Search, LogOut, User, Chevron
 import {supabase} from '@/lib/supabase';
 import {db} from '@/lib/db';
 import ClientAssignmentModal from '@/components/ClientAssignmentModal';
+import UpdateClientModal from '@/components/UpdateClientModal'
 import { ClipboardEdit, History, UserPlus, Trash2 } from 'lucide-react';
 
 /**
@@ -114,192 +115,6 @@ const ClientHistoryModal = ({ client, onClose }) => {
 /**
  * UpdateClientModal allows updating a client's follow-up and gift status.
  */
-const UpdateClientModal = ({ client, onClose, onUpdate }) => {
-  // Default next follow-up date is 5 days from today.
-  const getDefaultNextDate = () => {
-    const date = new Date();
-    date.setDate(date.getDate() + 5);
-    return date.toISOString().split("T")[0];
-  };
-
-  const [followUpDetails, setFollowUpDetails] = useState({
-    type: "email",
-    notes: "",
-    nextFollowUpDate: getDefaultNextDate(),
-  });
-
-  const [giftDetails, setGiftDetails] = useState({
-    status: client.giftStatus?.status === "In Progress"
-    ? "Not Started"
-    : (client.giftStatus?.status || "Not Started"), 
-    details: "",
-    notes: "",
-  });
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onUpdate(client.id, {
-      followUp: followUpDetails,
-      gift: giftDetails,
-    });
-    onClose();
-  };
-
-  return (
-    <Modal onClose={onClose} className="w-[800px] md:w-[700px] sm:w-[90%]">
-      <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
-        Update Client Status
-      </h2>
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Follow-up Section */}
-        <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-          <h3 className="font-medium text-gray-900 dark:text-white mb-4">Follow-up Status</h3>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-900 dark:text-gray-200 mb-1">
-                Type of Follow-up
-              </label>
-              <select
-                className="w-full p-2 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-800 focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-600"
-                value={followUpDetails.type}
-                onChange={(e) =>
-                  setFollowUpDetails((prev) => ({
-                    ...prev,
-                    type: e.target.value,
-                  }))
-                }
-              >
-                <option value="email">Email</option>
-                <option value="call">Phone Call</option>
-              </select>
-            </div>
-  
-            <div>
-              <label className="block text-sm font-medium text-gray-900 dark:text-gray-200 mb-1">
-                Follow-up Notes
-              </label>
-              <textarea
-                className="w-full p-2 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-800 focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-600"
-                value={followUpDetails.notes}
-                onChange={(e) =>
-                  setFollowUpDetails((prev) => ({
-                    ...prev,
-                    notes: e.target.value,
-                  }))
-                }
-                placeholder="What was discussed?"
-                rows={2}
-              />
-            </div>
-  
-            <div>
-              <label className="block text-sm font-medium text-gray-900 dark:text-gray-200 mb-1">
-                Next Follow-up Date
-              </label>
-              <input
-                type="date"
-                className="w-full p-2 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-800 focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-600"
-                value={followUpDetails.nextFollowUpDate}
-                onChange={(e) =>
-                  setFollowUpDetails((prev) => ({
-                    ...prev,
-                    nextFollowUpDate: e.target.value,
-                  }))
-                }
-              />
-            </div>
-            <p className="text-sm text-gray-500 dark:text-gray-300 italic">
-              Note: A follow-up entry will only be recorded if you enter notes.
-            </p>
-          </div>
-        </div>
-  
-        {/* Gift Section */}
-        <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-          <h3 className="font-medium text-gray-900 dark:text-white mb-4">Gift Status</h3>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-900 dark:text-gray-200 mb-1">
-                Gift Status
-              </label>
-              <select
-                className="w-full p-2 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-800 focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-600"
-                value={giftDetails.status}
-                onChange={(e) =>
-                  setGiftDetails((prev) => ({
-                    ...prev,
-                    status: e.target.value,
-                  }))
-                }
-              >       
-                <option value="Not Started">Not Started</option>
-                <option value="Sent">Sent</option>
-              </select>
-            </div>
-  
-            {giftDetails.status === "Sent" && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-900 dark:text-gray-200 mb-1">
-                    Gift Details
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full p-2 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-800 focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-600"
-                    value={giftDetails.details}
-                    onChange={(e) =>
-                      setGiftDetails((prev) => ({
-                        ...prev,
-                        details: e.target.value,
-                      }))
-                    }
-                    placeholder="What gift was sent?"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-900 dark:text-gray-200 mb-1">
-                    Gift Notes
-                  </label>
-                  <textarea
-                    className="w-full p-2 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-800 focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-600"
-                    value={giftDetails.notes}
-                    onChange={(e) =>
-                      setGiftDetails((prev) => ({
-                        ...prev,
-                        notes: e.target.value,
-                      }))
-                    }
-                    placeholder="Any additional notes..."
-                    rows={2}
-                  />
-                </div>
-              </>
-            )}
-          </div>
-          <p className="text-sm text-gray-500 dark:text-gray-300 italic mt-2">
-            Gift history will only be updated when a gift is marked as sent.
-          </p>
-        </div>
-  
-        <div className="flex justify-end space-x-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="px-4 py-2 bg-orange-500 hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-700 text-white rounded-lg"
-          >
-            Update Client
-          </button>
-        </div>
-      </form>
-    </Modal>
-  );
-};
 
 /**
  * ClientTracker is the main landing page component for the CRM.
@@ -311,36 +126,44 @@ const ClientTracker = ({user}) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [darkMode, setDarkMode] = useState(false);
  
-
-  useEffect(() => {
-    const fetchClients = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        console.log('Starting to fetch clients');
-        const data = await db.getClients();
-        console.log('Clients fetched succesfully:', data);
-        setClients(data);
-      } catch (err) {
-        console.error('error in fetchclients:', err);
-        setError(err.message || 'Failed to fetch Clients');
-      }finally {
-        setLoading(false);
-      }
-    };
-    fetchClients();
-    
-    const fetchCurrentUser = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        setCurrentUser(user);
-      } catch (error) {
-        console.error('Error fetching current user:', error);
-      }
-    };
-    
-    fetchCurrentUser();
-  }, []);
+//fetch clients
+ useEffect(() => {
+  const fetchClients = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      console.log('Starting to fetch clients');
+      const data = await db.getClients();
+      console.log('Clients fetched successfully:', data);
+      
+      // Update client statuses
+      const updatedClients = data.map(client => ({
+        ...client,
+        status: calculateClientStatus(client)
+      }));
+      
+      setClients(updatedClients);
+    } catch (err) {
+      console.error('Error in fetchClients:', err);
+      setError(err.message || 'Failed to fetch Clients');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  fetchClients();
+  
+  const fetchCurrentUser = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUser(user);
+    } catch (error) {
+      console.error('Error fetching current user:', error);
+    }
+  };
+  
+  fetchCurrentUser();
+}, []);
 
   useEffect(() => {
     const isDarkMode = localStorage.getItem('darkMode')
@@ -439,150 +262,180 @@ const ClientTracker = ({user}) => {
   };
 
   const handleAddClient = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
+  try {
+    setLoading(true);
+    const newClientData = {
+      name: newClient.name,
+      email: newClient.email,
+      nextContact: calculateNextContact(new Date().toISOString()),
+      nextGift: calculateNextContact(new Date().toISOString())
+    };
+    
+    const addedClient = await db.addClient(newClientData);
+    
+    // Assign to current user if in "my-clients" view
+    if (viewMode === "my-clients" && currentUser) {
+      await db.assignClientToUser(addedClient.id, currentUser.id);
+      
+      // Update assignedTo property
+      addedClient.assignedTo = [{
+        id: currentUser.id,
+        email: currentUser.email,
+        name: currentUser.email.split('@')[0]
+      }];
+    }
+    
+    setClients(prev => [...prev, {
+      ...addedClient,
+      status: calculateClientStatus(addedClient)
+    }]);
+    
+    setIsAddClientOpen(false);
+    setNewClient({ name: "", email: "" });
+  } catch (err) {
+    console.error('Error adding client:', err);
+    setError(err.message || 'Failed to add client');
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+const handleDeleteClient = async (clientId) => {
+  try {
+    setLoading(true);
+    const result = await db.deleteClient(clientId);
+    
+    if (result.success) {
+      // Remove client from local state
+      setClients(prev => prev.filter(client => client.id !== clientId));
+      setClientToDelete(null);
+      
+      // Show success message
+      console.log('Client deleted successfully');
+    } else {
+      // Show error to user
+      setError(`Failed to delete client: ${result.error?.message || 'Unknown error'}`);
+      console.error('Detailed deletion error:', result.error);
+    }
+  } catch (err) {
+    console.error('Exception in handleDeleteClient:', err);
+    setError('An unexpected error occurred while deleting the client');
+  } finally {
+    setLoading(false);
+  }
+};
+  const handleUpdateAssignments = async (clientId, updateData) => {
+    try {
+           // Update the local client data
+      const updatedClients = clients.map(client => {
+        if (client.id === clientId) {
+          return {
+            ...client,
+            assignedTo: updateData.assignedTo
+          };
+        }
+        return client;
+      });
+      
+      setClients(updatedClients);
+    } catch (err) {
+      console.error('Error updating assignments:', err);
+      setError(err.message || 'Failed to update assignments');
+    }
+  };
+
+  const handleUpdateClient = async (clientId, updatedClientData) => {
     try {
       setLoading(true);
-      const newClientData = {
-        name: newClient.name,
-        email: newClient.email,
-        nextContact: calculateNextContact(new Date().toISOString()),
-        nextGift: calculateNextContact(new Date().toISOString())
+      
+      // If we're getting a fully updated client object from getClientDetails
+      if (typeof updatedClientData === 'object' && updatedClientData.id) {
+        const clientWithStatus = {
+          ...updatedClientData,
+          status: calculateClientStatus(updatedClientData)
+        };
+        
+        // Update the client in our local state
+        setClients(prevClients => 
+          prevClients.map(client => 
+            client.id === clientId ? clientWithStatus : client
+          )
+        );
+        
+        setLoading(false);
+        return;
+      }
+      
+      // Legacy support for the old update approach
+      const today = new Date()
+        .toISOString()
+        .split("T")[0]
+        .replace(/-/g, "/");
+    
+      // Build updates for client record
+      const clientUpdates = {
+        last_update: today.replace(/\//g, '-')
       };
-      const addedClient = await db.addClient(newClientData);
-      setClients(prev => [...prev, addedClient]);
-      setIsAddClientOpen(false);
+      
+      // Update next contact date if provided in followUp
+      if (updatedClientData.followUp && updatedClientData.followUp.nextFollowUpDate) {
+        clientUpdates.next_contact = updatedClientData.followUp.nextFollowUpDate;
+      }
+      
+      // Update client in database
+      await db.updateClient(clientId, clientUpdates);
+      
+      // If followUp notes provided, add to history
+      if (updatedClientData.followUp && updatedClientData.followUp.notes.trim() !== '') {
+        await db.addFollowUpHistory(
+          clientId,
+          updatedClientData.followUp.type,
+          updatedClientData.followUp.notes
+        );
+      }
+      
+      // Handle gift status updates
+      if (updatedClientData.gift && updatedClientData.gift.status === 'Sent') {
+        // Add gift history
+        await db.addGiftHistory(
+          clientId,
+          'Sent',
+          updatedClientData.gift.details,
+          updatedClientData.gift.notes || ''
+        );
+        
+        // Update next gift date (3 months later)
+        const nextGiftDate = new Date();
+        nextGiftDate.setMonth(nextGiftDate.getMonth() + 3);
+        
+        await db.updateClient(clientId, {
+          next_gift: nextGiftDate.toISOString().split('T')[0]
+        });
+      }
+      
+      // Get the updated client with all history
+      const updatedClient = await db.getClientDetails(clientId);
+      
+      // Update our local state
+      const updatedClients = clients.map((client) => {
+        if (client.id === clientId) {
+          return {
+            ...updatedClient,
+            status: calculateClientStatus(updatedClient)
+          };
+        }
+        return client;
+      });
+    
+      setClients(updatedClients);
     } catch (err) {
-      setError(err.message);
+      console.error('Error updating client:', err);
+      setError(err.message || 'Failed to update client');
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleDeleteClient = async (clientId) => {
-    try {
-      await db.deleteClient(clientId);
-      setClients(prev => prev.filter(client => client.id !== clientId));
-      setClientToDelete(null);
-    } catch (err) {
-      setError(err.message);
-    }
-  };
-
-  const handleUpdateAssignments = (clientId, updateData) => {
-    const updatedClients = clients.map(client => {
-      if (client.id === clientId) {
-        return {
-          ...client,
-          assignedTo: updateData.assignedTo
-        };
-      }
-      return client;
-    });
-    
-    setClients(updatedClients);
-  };
-
-  const filteredClients = useMemo(() => {
-    let filtered = clients.filter((client) =>
-      client.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    
-    if (viewMode === "contacts") {
-      filtered = filtered.filter((client) => {
-        const today = new Date();
-        const nextContact = new Date(client.nextContact);
-        const daysUntilContact = Math.ceil((nextContact - today) / ONE_DAY_MS);
-        return daysUntilContact <= 2 || client.status === "Need Update";
-      });
-    } else if (viewMode === "gifts") {
-      filtered = filtered.filter((client) => {
-        const today = new Date();
-        const nextGift = new Date(client.nextGift);
-        const daysUntilGift = Math.ceil((nextGift - today) / ONE_DAY_MS);
-        return daysUntilGift <= 7;
-      });
-    } else if (viewMode === "my-clients" && currentUser) {
-      filtered = filtered.filter((client) => {
-        // Check if client is assigned to current user
-        return Array.isArray(client.assignedTo) && 
-          client.assignedTo.some(person => 
-            (typeof person === 'object' && person.id === currentUser.id) ||
-            (typeof person === 'string' && person === currentUser.id)
-          );
-      });
-    }
-    
-    return filtered;
-  }, [clients, searchTerm, viewMode, ONE_DAY_MS, currentUser]);
-
-  const handleUpdateClient = (clientId, updateData) => {
-    const today = new Date()
-      .toISOString()
-      .split("T")[0]
-      .replace(/-/g, "/");
-  
-    const updatedClients = clients.map((client) => {
-      if (client.id === clientId) {
-        const updatedClient = {
-          ...client,
-          lastUpdate: today,
-        };
-        
-        // Update follow-up if user entered notes
-        if (updateData.followUp.notes.trim() !== '') {
-          updatedClient.nextContact = updateData.followUp.nextFollowUpDate.replace(/-/g, "/");
-          updatedClient.followUpHistory = [
-            ...(client.followUpHistory || []),
-            {
-              date: today,
-              type: updateData.followUp.type,
-              notes: updateData.followUp.notes,
-            },
-          ];
-        }
-  
-        // Update gift status - only two states now: "Not Started" or "Sent"
-        if (updateData.gift.status !== client.giftStatus?.status || 
-            updateData.gift.status === "Sent") {
-            
-          if (updateData.gift.status === "Sent") {
-            // When a gift is sent, schedule the next gift for 3 months later
-            const nextGiftDate = new Date();
-            nextGiftDate.setMonth(nextGiftDate.getMonth() + 3);
-            const formattedNextGiftDate = nextGiftDate.toISOString().split("T")[0].replace(/-/g, "/");
-            
-            updatedClient.giftStatus = {
-              status: "Sent",
-              lastGiftSent: today,
-              lastGiftDetails: updateData.gift.details,
-              giftHistory: [
-                ...(client.giftStatus?.giftHistory || []),
-                {
-                  date: today,
-                  gift: updateData.gift.details,
-                  notes: updateData.gift.notes,
-                },
-              ],
-            };
-            
-            // Set the next gift due date
-            updatedClient.nextGift = formattedNextGiftDate;
-          } else {
-            // If not "Sent", it must be "Not Started"
-            updatedClient.giftStatus = {
-              ...client.giftStatus,
-              status: "Not Started",
-            };
-          }
-        }
-  
-        updatedClient.status = calculateClientStatus(updatedClient);
-        return updatedClient;
-      }
-      return client;
-    });
-  
-    setClients(updatedClients);
   };
 
   const getStatusColor = (status) => {
@@ -625,7 +478,59 @@ const ClientTracker = ({user}) => {
   }
   }
 
+  const handleViewHistory = async (client) => {
+    try {
+      setLoading(true);
+      
+      // Fetch complete client details including history
+      const clientDetails = await db.getClientDetails(client.id);
+      
+      // Update the client with fetched details
+      setSelectedClient(clientDetails);
+      setIsHistoryModalOpen(true);
+    } catch (err) {
+      console.error('Error fetching client history:', err);
+      setError(err.message || 'Failed to fetch client history');
+    } finally {
+      setLoading(false);
+    }
+  };
   
+
+  const filteredClients = useMemo(() => {
+    let filtered = clients.filter((client) =>
+      client.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    
+    if (viewMode === "contacts") {
+      filtered = filtered.filter((client) => {
+        const today = new Date();
+        const nextContact = new Date(client.nextContact);
+        const daysUntilContact = Math.ceil((nextContact - today) / ONE_DAY_MS);
+        return daysUntilContact <= 2 || client.status === "Need Update";
+      });
+    } else if (viewMode === "gifts") {
+      filtered = filtered.filter((client) => {
+        const today = new Date();
+        const nextGift = new Date(client.nextGift);
+        const daysUntilGift = Math.ceil((nextGift - today) / ONE_DAY_MS);
+        return daysUntilGift <= 7;
+      });
+    } else if (viewMode === "my-clients" && currentUser) {
+      filtered = filtered.filter((client) => {
+        // Check if client is assigned to current user
+        return Array.isArray(client.assignedTo) && 
+          client.assignedTo.some(person => 
+            (typeof person === 'object' && person.id === currentUser.id) ||
+            (typeof person === 'string' && person === currentUser.id)
+          );
+      });
+    }
+    
+    return filtered;
+  }, [clients, searchTerm, viewMode, ONE_DAY_MS, currentUser]);
+
+
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
        {/* Collapsible Sidebar */}
@@ -1019,8 +924,7 @@ const ClientTracker = ({user}) => {
   
   <button
     onClick={() => {
-      setSelectedClient(client);
-      setIsHistoryModalOpen(true);
+      handleViewHistory(client);
     }}
     className="flex items-center justify-start w-full px-2 py-1 bg-blue-50 hover:bg-blue-100 rounded text-blue-600 text-xs dark:bg-gray-600 dark:text-blue-400"
     title="View History"
