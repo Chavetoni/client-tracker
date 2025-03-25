@@ -5,8 +5,6 @@ import { supabase } from '@/lib/supabase';
 const LoginForm = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState(''); 
-    const [rememberMe, setRememberMe] = useState(false);
-    const [connectionTest, setConnectionTest] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
