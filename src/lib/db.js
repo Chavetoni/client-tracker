@@ -6,18 +6,11 @@ import { createClient } from '@supabase/supabase-js';
 supabase.supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 supabase.supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-// Enable debug mode - add this line
-supabase.auth.onAuthStateChange((event, session) => {
-  console.log('Supabase auth event:', event);
-});
-
-
 export const db = {
   // Fetch clients with their assignments and current status
   async getClients() {
     try {
-      console.log('Fetching clients...');
-      
+       
       // Get all clients
       const { data: clients, error: clientsError } = await supabase
         .from('clients')
@@ -89,8 +82,7 @@ export const db = {
           }
         })
       );
-  
-      console.log('Clients retrieved with assignments:', clientsWithAssignments);
+
       return clientsWithAssignments;
     } catch (error) {
       console.error('Error in getClients:', error);
@@ -201,7 +193,7 @@ export const db = {
   // Get follow-up history for a client
   async getFollowUpHistory(clientId) {
     try {
-      console.log('Fetching follow-up history for client:', clientId);
+     
       
       const { data, error } = await supabase
         .from('follow_up_history')
@@ -213,8 +205,7 @@ export const db = {
         console.error('Error fetching follow-up history:', error);
         throw error;
       }
-      
-      console.log('Follow-up history retrieved:', data);
+
       return data;
     } catch (error) {
       console.error('Error in getFollowUpHistory:', error);
@@ -225,7 +216,6 @@ export const db = {
   // Get gift history for a client
   async getGiftHistory(clientId) {
     try {
-      console.log('Fetching gift history for client:', clientId);
       
       const { data, error } = await supabase
         .from('gift_history')
@@ -238,7 +228,6 @@ export const db = {
         throw error;
       }
       
-      console.log('Gift history retrieved:', data);
       return data;
     } catch (error) {
       console.error('Error in getGiftHistory:', error);
@@ -248,9 +237,7 @@ export const db = {
 
   // Insert follow-up history record 
   async addFollowUpHistory(clientId, type, notes) {
-    try {
-      console.log('Adding follow-up history for client:', clientId);
-      
+    try {      
       const { data, error } = await supabase
         .from('follow_up_history')
         .insert([{
@@ -265,8 +252,6 @@ export const db = {
         console.error('Error adding follow-up history:', error);
         throw error;
       }
-      
-      console.log('Follow-up history added:', data[0]);
       return data[0];
     } catch (err) {
       console.error('Error in addFollowUpHistory:', err);
@@ -276,9 +261,7 @@ export const db = {
 
   // Insert gift history (only if gift was sent)
   async addGiftHistory(clientId, status, giftDetails, notes) {
-    try {
-      console.log('Adding gift history for client:', clientId);
-      
+    try {     
       const { data, error } = await supabase
         .from('gift_history')
         .insert([{
@@ -294,8 +277,6 @@ export const db = {
         console.error('Error adding gift history:', error);
         throw error;
       }
-      
-      console.log('Gift history added:', data[0]);
       return data[0];
     } catch (err) {
       console.error('Error in addGiftHistory:', err);
@@ -402,9 +383,7 @@ export const db = {
   // Update client with follow-up and gift details in a single transaction
   async updateClientWithDetails(clientId, updateData) {
     try {
-      console.log('Updating client with details. Client:', clientId);
-      console.log('Update data:', updateData);
-      
+ 
       // Start a transaction for updating multiple tables
       const today = new Date().toISOString().split('T')[0];
       
@@ -463,8 +442,6 @@ export const db = {
             .eq('id', clientId);
         }
       }
-      
-      console.log('Client updated with all details successfully');
       return updatedClient[0];
     } catch (error) {
       console.error('Error in updateClientWithDetails:', error);
@@ -475,7 +452,6 @@ export const db = {
   // Get client details including follow-up and gift history
   async getClientDetails(clientId) {
     try {
-      console.log('Fetching complete client details. Client:', clientId);
       
       // Get client record
       const { data: client, error: clientError } = await supabase
@@ -561,8 +537,6 @@ export const db = {
         },
         assignedTo: assignedUsers
       };
-      
-      console.log('Client details retrieved successfully');
       return formattedClient;
     } catch (error) {
       console.error('Error in getClientDetails:', error);

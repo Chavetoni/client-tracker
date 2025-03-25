@@ -132,9 +132,7 @@ const ClientTracker = ({user}) => {
     try {
       setLoading(true);
       setError(null);
-      console.log('Starting to fetch clients');
       const data = await db.getClients();
-      console.log('Clients fetched successfully:', data);
       
       // Update client statuses
       const updatedClients = data.map(client => ({
