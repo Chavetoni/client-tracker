@@ -1,36 +1,34 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# ClientTrack
 
-## Getting Started
+**An internal client relationship management application built for engineering project managers.**
 
-First, run the development server:
+ClientTrack helps project managers organize client information, coordinate assignments, schedule follow-ups, and maintain a history of client interactions.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Tech Stack
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **Frontend:** Next.js, React, JavaScript
+- **Database:** PostgreSQL via Supabase
+- **Backend services:** Supabase authentication and database APIs
+- **Styling:** Tailwind CSS
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## Key Features
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Client records and relationship management
+- Multiple team members assigned to clients
+- Follow-up scheduling and relationship status tracking
+- Interaction and gift history
+- Multi-user access
 
-## Learn More
+## Engineering Highlights
 
-To learn more about Next.js, take a look at the following resources:
+- Designed relational tables for clients, user profiles, assignments, and history records
+- Implemented many-to-many client assignments
+- Integrated database operations with the application interface
+- Built around workflows identified through discussions with project managers
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Future Improvements
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Expand automated testing
+- Improve atomicity of related database updates
+- Optimize database queries
+- Strengthen documentation and error handling
